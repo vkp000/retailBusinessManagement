@@ -65,7 +65,7 @@ public class SecurityConfig {
 
     private UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173", "http://192.168.0.11:5173"));
+        config.setAllowedOrigins(List.of("http://localhost:5173", "https://retailbusinessmanagement.netlify.app"));
 //        config.setAllowedOrigins(List.of("*"));
 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));

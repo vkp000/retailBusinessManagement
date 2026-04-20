@@ -21,6 +21,9 @@ public class OrderResponse {
     private Double subtotal;
     private Double tax;
     private Double grandTotal;
+    // NEW: discount fields
+    private Double discount;
+    private Double discountPercent;
     private PaymentMethod paymentMethod;
     private LocalDateTime createdAt;
     private PaymentDetails paymentDetails;
@@ -35,5 +38,4 @@ public class OrderResponse {
         private Double price;
         private Double quantity;
     }
-
 }

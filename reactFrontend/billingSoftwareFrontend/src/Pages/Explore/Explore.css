@@ -1,59 +1,86 @@
-.explore-container {
+.explore-root {
     display: flex;
-    gap: 20px;
-    padding: 20px;
-    height: calc(100vh - 5rem);
-    box-sizing: border-box;
-    background-color: #2C3335;
-}
-
-.left-column {
-    flex: 0.7;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    padding: 16px;
     height: 100%;
-    box-sizing: border-box;
-    display: flex;
+    background: #12121c;
+    overflow: hidden;
+}
+
+/* Left: Products */
+.explore-left {
+    flex: 1;
     flex-direction: column;
+    overflow: hidden;
+    border-right: 1px solid var(--color-border);
 }
 
-.first-row {
-    flex: 0.3; 
-    box-sizing: border-box;
+.explore-categories {
+    flex-shrink: 0;
+    padding: 12px;
+    overflow-x: auto;
 }
 
-.horizontal-line {
-    margin: 20px;
-    border: 0;
-    border-top: 1px solid #cccccc;
+.explore-divider {
+    height: 1px;
+    width: 100%;
+    background: var(--color-border);
+    flex-shrink: 0;
 }
 
-.second-row {
-    flex: 0.7;
-    box-sizing: border-box;
+.explore-items {
+    flex: 1;
+    overflow-y: auto;
 }
 
-.right-column {
-    flex: 0.3;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    padding: 16px;
-    height: 100%;
-    box-sizing: border-box;
-    display: flex;
+/* Right: Cart */
+.explore-right {
+    width: 300px;
+    flex-shrink: 0;
     flex-direction: column;
+    background: var(--color-surface);
+    overflow: hidden;
 }
 
-.cart-summary-container {
-    flex: 0.3;
-    border-top: 1px solid #ccc;
+.explore-customer { flex-shrink: 0; }
+
+.explore-cart-items {
+    flex: 1;
+    overflow-y: auto;
 }
 
-.cart-item {
-    background-color: #2c2c2c;
-    padding: 16px;
-    border-radius: 8px;
+.explore-cart-summary {
+    flex-shrink: 0;
+    border-top: 1px solid var(--color-border);
 }
 
- 
+/* Mobile tabs */
+.explore-mobile-tabs {
+    background: var(--color-surface);
+    border-bottom: 1px solid var(--color-border);
+    flex-shrink: 0;
+}
+
+.explore-tab {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 7px;
+    padding: 13px;
+    background: none;
+    border: none;
+    border-bottom: 2px solid transparent;
+    color: var(--color-muted);
+    font-size: 14px;
+    font-weight: 500;
+    font-family: 'Outfit', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+.explore-tab.active { color: var(--color-accent); border-bottom-color: var(--color-accent); }
+
+/* Mobile: full width panels */
+@media (max-width: 991px) {
+    .explore-root { flex-direction: column; height: auto; overflow: visible; }
+    .explore-left { border-right: none; min-height: 55vh; }
+    .explore-right { width: 100%; height: auto; padding-bottom: 10px; }
+}

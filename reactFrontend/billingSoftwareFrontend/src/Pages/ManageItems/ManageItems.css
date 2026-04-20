@@ -1,28 +1,44 @@
-.items-container {
-    display: flex;
-    gap: 20px;
-    padding: 20px;
-    height: calc(100vh-5rem);
-    box-sizing: border-box;
-    background-color: #2C3335;
+.mi-container {
+    display: flex; flex-direction: column;
+    height: 100%; background: var(--color-bg); overflow: hidden;
 }
 
-.left-column {
-    flex: 0.7;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    padding: 16px;
-    height: 100%;
-    box-sizing: border-box;
-    display: flex;
-    flex-direction: column;
+.mi-header {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--color-border);
+    background: var(--color-surface);
+    flex-shrink: 0; flex-wrap: wrap; gap: 10px;
 }
 
-.right-column {
-    flex: 0.3;
-    border: 1px solid #ccc;
-    border-radius: 8px;
-    padding: 16px;
-    height: 100%;
-    box-sizing: border-box;
+.mi-tabs {
+    display: flex; gap: 4px;
+    background: var(--color-bg);
+    padding: 3px; border-radius: var(--radius-md);
+    border: 1px solid var(--color-border);
+}
+
+.mi-tab {
+    display: flex; align-items: center; gap: 6px;
+    padding: 7px 14px; border: none; border-radius: 7px;
+    background: transparent; color: var(--color-muted);
+    font-size: 13px; font-weight: 500; cursor: pointer;
+    transition: all 0.15s; font-family: 'Outfit', sans-serif;
+}
+.mi-tab:hover { color: var(--color-text); background: var(--color-surface2); }
+.mi-tab.active { background: var(--color-accent); color: #000; }
+
+.mi-body { flex: 1; overflow-y: auto; }
+
+.wizard-wrapper {
+    max-width: 560px; margin: 0 auto;
+    padding: 4px 0 80px;
+}
+
+@media (max-width: 768px) {
+    .mi-header { padding: 10px 14px; }
+    .mi-tab span { display: none; }
+    .mi-tab { padding: 8px 12px; }
+    .wizard-wrapper { max-width: 100%; padding-bottom: 80px; }
+    .mi-body { padding-bottom: 58px; }
 }

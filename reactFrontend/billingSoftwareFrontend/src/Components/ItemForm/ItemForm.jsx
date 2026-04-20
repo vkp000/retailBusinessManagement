@@ -5,80 +5,83 @@ import { addItem } from "../../Service/ItemService";
 import { assets } from "../../assets/Asset";
 
 const ItemForm = () => {
-
-  const {categories, setItemsData, itemsData, setcategories} = useContext(AppContext)
-  const[image, setImage] = useState(false);
+  const { categories, setItemsData, itemsData, setCategories } = useContext(AppContext);
+  const [image, setImage] = useState(false);
   const [loading, setLoading] = useState(false);
 
-
-  const[data, setData] = useState({
+  const [data, setData] = useState({
     name: "",
-    categoryId:"",
-    price:"",
-    description:"",
+    categoryId: "",
+    price: "",
+    description: "",
   });
 
-
   const onChangeHandler = (e) => {
-    const value = e.target.value;
-    const name = e.target.name;
-    setData((data) => ({...data, [name]: value}))
-  }
+    const { name, value } = e.target;
+    setData((data) => ({ ...data, [name]: value }));
+  };
 
-  const onSubmitHandler = (e) => {
+  // FIX: async added, await added on addItem, error variable name fixed
+  const onSubmitHandler = async (e) => {
     e.preventDefault();
 
-    setLoading(true)
+    if (!image) {
+      toast.error("Please select an image");
+      return;
+    }
+
+    setLoading(true);
 
     const formData = new FormData();
     formData.append("item", JSON.stringify(data));
     formData.append("file", image);
 
-    try{
-      if(!image) {
-        toast.error("SelectImage");
-        return;
-      }
-      const response = addItem(formData);
+    try {
+      // FIX: await added (was missing — response.status was always undefined)
+      const response = await addItem(formData);
 
-      if(response.status === 201) {
-        setItemsData([...itemsData, response.data])
+      if (response.status === 201) {
+        setItemsData([...itemsData, response.data]);
 
-        setcategories((prevCategories) => 
-        prevCategories.map((category) => category.categoryId === data.categoryId ? {...category, items: category.items + 1} : category));
-
+        // FIX: setCategories (was setcategories — wrong case)
+        setCategories((prevCategories) =>
+          prevCategories.map((category) =>
+            category.categoryId === data.categoryId
+              ? { ...category, items: category.items + 1 }
+              : category
+          )
+        );
 
         toast.success("Item added");
-        setData({
-          name: "",
-          description: "",
-          price:"",
-          categoryId: "",
-        })
-
+        setData({ name: "", description: "", price: "", categoryId: "" });
         setImage(false);
-      }else {
-        toast.error("Unable to add item")
+      } else {
+        toast.error("Unable to add item");
       }
-    }catch (er){
-      console.error(error);
-      toast.error("unable to add item niche vala item form me ")
-      
+    } catch (err) {
+      // FIX: was catching 'er' but using 'error' (undefined variable)
+      console.error(err);
+      toast.error("Unable to add item");
+    } finally {
+      setLoading(false);
     }
-
-  }
-
+  };
 
   return (
-    <div className="item-form-container" style={{height:'100vh', overflowY:'auto', overflowX:'hidden'}} >
+    <div className="item-form-container" style={{ height: "100vh", overflowY: "auto", overflowX: "hidden" }}>
       <div className="mx-2 mt-2">
         <div className="row">
           <div className="card col-md-8 form-container">
             <div className="card-body">
-              <form onSubmit={onSubmitHandler} >
+              <form onSubmit={onSubmitHandler}>
                 <div className="mb-3">
                   <label htmlFor="image" className="form-label">
-                    <img src={image ? URL.createObjectURL(image) : assets.upload} alt="" width={48} />
+                    <img
+                      src={image ? URL.createObjectURL(image) : assets.upload}
+                      alt="Upload"
+                      width={48}
+                      style={{ cursor: "pointer" }}
+                    />
                   </label>
                   <input
                     type="file"
@@ -86,13 +89,13 @@ const ItemForm = () => {
                     id="image"
                     className="form-control"
                     hidden
+                    accept="image/*"
                     onChange={(e) => setImage(e.target.files[0])}
                   />
                 </div>
+
                 <div className="mb-3">
-                  <label htmlFor="name" className="form-label">
-                    Name
-                  </label>
+                  <label htmlFor="name" className="form-label">Name</label>
                   <input
                     type="text"
                     name="name"
@@ -101,59 +104,58 @@ const ItemForm = () => {
                     placeholder="Item Name"
                     onChange={onChangeHandler}
                     value={data.name}
+                    required
                   />
                 </div>
 
                 <div className="mb-3">
-                  <label htmlFor="category" className="form-label">
-                    Category
-                  </label>
+                  <label htmlFor="category" className="form-label">Category</label>
                   <select
                     name="categoryId"
                     id="category"
                     className="form-control"
                     onChange={onChangeHandler}
                     value={data.categoryId}
+                    required
                   >
-                    <option value="">--SELECT CATEGORY--</option>
-                    {categories.map((category, index) => (
-                      <option key={index} value={category.categoryId}>{category.name}</option>
+                    <option value="">-- SELECT CATEGORY --</option>
+                    {categories.map((category) => (
+                      <option key={category.categoryId} value={category.categoryId}>
+                        {category.name}
+                      </option>
                     ))}
                   </select>
                 </div>
 
                 <div className="mb-3">
-                  <label htmlFor="price" className="form-label">
-                    Price
-                  </label>
+                  <label htmlFor="price" className="form-label">Price</label>
                   <input
                     type="number"
                     name="price"
                     id="price"
                     className="form-control"
-                    placeholder="&#8377;200.00"
+                    placeholder="₹200.00"
                     onChange={onChangeHandler}
                     value={data.price}
+                    required
                   />
                 </div>
 
                 <div className="mb-3">
-                  <label htmlFor="description" className="form-label">
-                    Description
-                  </label>
+                  <label htmlFor="description" className="form-label">Description</label>
                   <textarea
                     rows="5"
                     name="description"
                     id="description"
                     className="form-control"
-                    placeholder="Write Description of the category"
+                    placeholder="Write description of the item"
                     onChange={onChangeHandler}
                     value={data.description}
-                  ></textarea>
+                  />
                 </div>
 
                 <button type="submit" className="btn btn-warning w-100" disabled={loading}>
-                  {loading ? "Loading.." : "Save"}
+                  {loading ? "Uploading..." : "Save"}
                 </button>
               </form>
             </div>

@@ -15,37 +15,29 @@ export const UserRouter = () => {
   const { auth } = useContext(AppContext);
 
   const LoginRoute = ({ element }) => {
-    if (auth.token) {
-      return <Navigate to="/dashboard" replace />;
-    }
+    if (auth.token) return <Navigate to="/dashboard" replace />;
     return element;
   };
 
   const ProtectedRoute = ({ element, allowedRoles }) => {
-    if (!auth.token) {
-      return <Navigate to="/login" replace />;
-    }
-
-    if (allowedRoles && !allowedRoles.includes(auth.role)) {
-      return <Navigate to="/dashboard" replace />;
-    }
-
+    if (!auth.token) return <Navigate to="/login" replace />;
+    if (allowedRoles && !allowedRoles.includes(auth.role)) return <Navigate to="/dashboard" replace />;
     return element;
   };
 
   return (
     <Routes>
-      <Route path="/dashboard" element={<Dashboard />} />
-      <Route path="/" element={<Dashboard />} />
-      <Route path="/explore" element={<Explore />} />
+      {/* FIX: / and /dashboard now protected — bina login ke access nahi */}
+      <Route path="/" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['ROLE_USER', 'ROLE_ADMIN']} />} />
+      <Route path="/dashboard" element={<ProtectedRoute element={<Dashboard />} allowedRoles={['ROLE_USER', 'ROLE_ADMIN']} />} />
+      <Route path="/explore" element={<ProtectedRoute element={<Explore />} allowedRoles={['ROLE_USER', 'ROLE_ADMIN']} />} />
 
       <Route path="/manage-categories" element={<ProtectedRoute element={<ManageCategory />} allowedRoles={['ROLE_ADMIN']} />} />
       <Route path="/manage-users" element={<ProtectedRoute element={<ManageUsers />} allowedRoles={['ROLE_ADMIN']} />} />
       <Route path="/manage-items" element={<ProtectedRoute element={<ManageItems />} allowedRoles={['ROLE_ADMIN']} />} />
 
-      <Route path="/orders" element={<OrderHistory />} />
-      <Route path="/login" element={<LoginRoute element={<Login />} />}/>
-
+      <Route path="/orders" element={<ProtectedRoute element={<OrderHistory />} allowedRoles={['ROLE_USER', 'ROLE_ADMIN']} />} />
+      <Route path="/login" element={<LoginRoute element={<Login />} />} />
       <Route path="*" element={<NotFound />} />
     </Routes>
   );

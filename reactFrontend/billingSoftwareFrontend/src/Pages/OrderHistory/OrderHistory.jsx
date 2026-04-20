@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import "./OrderHistory.css";
+// FIX: latestOrders import add kiya
+import { latestOrders } from "../../Service/OrderService";
 
 const OrderHistory = () => {
   const [orders, setOrders] = useState([]);
@@ -23,6 +25,7 @@ const OrderHistory = () => {
     return items.map((item) => `${item.name} x ${item.quantity}`).join(", ");
   };
 
+  // FIX: loading/empty check hata ke yahan se, return ke andar diya
   const formatDate = (dateString) => {
     const options = {
       year: "numeric",
@@ -31,16 +34,17 @@ const OrderHistory = () => {
       hour: "2-digit",
       minute: "2-digit",
     };
-
-    if (loading) {
-      return <div className="text-center py-4">Loading orders...</div>;
-    }
-
-    if (orders.length === 0) {
-      return <div className="text-center py-4">No orders found</div>;
-    }
     return new Date(dateString).toLocaleDateString("en-US", options);
   };
+
+  // FIX: loading aur empty state yahan sahi jagah par
+  if (loading) {
+    return <div className="text-center py-4 text-light">Loading orders...</div>;
+  }
+
+  if (orders.length === 0) {
+    return <div className="text-center py-4 text-light">No orders found</div>;
+  }
 
   return (
     <div className="orders-history-container">
@@ -59,7 +63,6 @@ const OrderHistory = () => {
               <th>Date</th>
             </tr>
           </thead>
-
           <tbody>
             {orders.map((order) => (
               <tr key={order.orderId}>
@@ -72,7 +75,9 @@ const OrderHistory = () => {
                 <td>₹{order.grandTotal}</td>
                 <td>{order.paymentMethod}</td>
                 <td>
-                  <span className={`badge ${order.paymentDetails?.status === "COMPLETED" ? "bg-success" : "bg-warning text-dark"}`} >{order.paymentDetails?.status || "PENDING"}</span>
+                  <span className={`badge ${order.paymentDetails?.status === "COMPLETED" ? "bg-success" : "bg-warning text-dark"}`}>
+                    {order.paymentDetails?.status || "PENDING"}
+                  </span>
                 </td>
                 <td>{formatDate(order.createdAt)}</td>
               </tr>

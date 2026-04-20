@@ -1,6 +1,5 @@
 package com.vivek.billingSoftwareBackend.io;
 
-import com.vivek.billingSoftwareBackend.entity.OrderItemEntity;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -21,7 +20,9 @@ public class OrderRequest {
     private Double tax;
     private Double grandTotal;
     private String paymentMethod;
-
+    // NEW: discount fields
+    private Double discount;
+    private Double discountPercent;
 
     @Data
     @AllArgsConstructor
@@ -33,5 +34,4 @@ public class OrderRequest {
         private Double price;
         private Integer quantity;
     }
-
 }

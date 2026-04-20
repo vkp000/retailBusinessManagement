@@ -1,64 +1,63 @@
 package com.vivek.billingSoftwareBackend.service.impl;
 
+import com.cloudinary.Cloudinary;
+import com.cloudinary.utils.ObjectUtils;
 import com.vivek.billingSoftwareBackend.service.FileUploadService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
-import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectAclRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectResponse;
 
 import java.io.IOException;
-import java.util.UUID;
+import java.util.Map;
 
 @Service
 @RequiredArgsConstructor
 public class FileUploadServiceImpl implements FileUploadService {
 
-    @Value("${aws.bucket.name}")
-    private String bucketName;
-
-    private final S3Client s3Client;
+    private final Cloudinary cloudinary;
 
     @Override
     public String uploadFile(MultipartFile file) {
-        String filenameExtension = file.getOriginalFilename().substring(file.getOriginalFilename().lastIndexOf(".") + 1);
-        String key = UUID.randomUUID().toString() + "." + filenameExtension;
-        try{
-            PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                    .bucket(bucketName)
-                    .key(key)
-                    .acl("public-read")
-                    .contentType(file.getContentType())
-                    .build();
-            PutObjectResponse response = s3Client.putObject(putObjectRequest, RequestBody.fromBytes(file.getBytes()));
-
-
-            if(response.sdkHttpResponse().isSuccessful()){
-                return  "https://" + bucketName + ".s3.amazonaws.com/" + key;
-            } else {
-                throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occured while uploading the image");
-            }
-        }catch (IOException e) {
-            throw new ResponseStatusException(HttpStatus.INTERNAL_SERVER_ERROR, "An error occured while uploading the file");
-
+        try {
+            Map<?, ?> result = cloudinary.uploader().upload(
+                    file.getBytes(),
+                    ObjectUtils.emptyMap()
+            );
+            // Cloudinary returns the secure HTTPS URL directly
+            return (String) result.get("secure_url");
+        } catch (IOException e) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Error occurred while uploading image to Cloudinary"
+            );
         }
     }
 
     @Override
     public boolean deleteFile(String imgUrl) {
-        String filename  = imgUrl.substring(imgUrl.lastIndexOf("/" ) + 1);
-        DeleteObjectRequest deleteObjectRequest = DeleteObjectRequest.builder()
-                .bucket(bucketName)
-                .key(filename)
-                .build();
-        s3Client.deleteObject(deleteObjectRequest);
-        return true;
+        try {
+            // Extract public_id from the Cloudinary URL
+            // URL format: https://res.cloudinary.com/<cloud>/image/upload/v<version>/<public_id>.<ext>
+            String publicId = extractPublicId(imgUrl);
+            Map<?, ?> result = cloudinary.uploader().destroy(publicId, ObjectUtils.emptyMap());
+            return "ok".equals(result.get("result"));
+        } catch (IOException e) {
+            throw new ResponseStatusException(
+                    HttpStatus.INTERNAL_SERVER_ERROR,
+                    "Error occurred while deleting image from Cloudinary"
+            );
+        }
+    }
+
+    private String extractPublicId(String imgUrl) {
+        // e.g. https://res.cloudinary.com/demo/image/upload/v1234567890/sample.jpg
+        // public_id = "sample"
+        String withoutQuery = imgUrl.split("\\?")[0];
+        String[] parts = withoutQuery.split("/");
+        String fileWithExt = parts[parts.length - 1];
+        // Remove extension
+        return fileWithExt.contains(".") ? fileWithExt.substring(0, fileWithExt.lastIndexOf('.')) : fileWithExt;
     }
 }

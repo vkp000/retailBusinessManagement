@@ -1,0 +1,64 @@
+.barcode-scanner-overlay {
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,0.8);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999;
+    padding: 16px;
+}
+
+.barcode-scanner-modal {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-lg);
+    padding: 20px;
+    width: 100%; max-width: 380px;
+    color: var(--color-text);
+}
+
+.barcode-scanner-modal h6 { font-size: 15px; font-weight: 600; }
+
+.scanner-mode-toggle {
+    display: flex; gap: 4px;
+    background: var(--color-surface2);
+    border-radius: var(--radius-md); padding: 3px; margin-bottom: 16px;
+}
+
+.scanner-mode-btn {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px;
+    padding: 8px; border: none; border-radius: 8px;
+    background: transparent; color: var(--color-muted);
+    font-size: 13px; font-weight: 500;
+    cursor: pointer; font-family: 'Outfit', sans-serif; transition: all 0.15s;
+}
+.scanner-mode-btn.active { background: var(--color-accent); color: #000; }
+
+.camera-container {
+    position: relative; width: 100%; min-height: 200px;
+    background: #000; border-radius: var(--radius-md); overflow: hidden;
+}
+
+.scanner-video { width: 100%; height: 220px; object-fit: cover; display: block; }
+
+.scanner-overlay-line {
+    position: absolute; left: 10%; width: 80%; height: 2px;
+    background: var(--color-accent);
+    animation: scan-line 2s linear infinite;
+}
+
+@keyframes scan-line {
+    0%   { top: 15%; opacity: 1; }
+    50%  { top: 85%; opacity: 0.5; }
+    100% { top: 15%; opacity: 1; }
+}
+
+.scanner-manual-form .input-group {
+    border: 2px solid var(--color-accent); border-radius: var(--radius-md); overflow: hidden;
+}
+
+.scanner-manual-form input.form-control {
+    background: var(--color-surface2); border: none; color: var(--color-text);
+    font-family: 'Outfit', sans-serif; padding: 10px 14px;
+}
+.scanner-manual-form input.form-control:focus { box-shadow: none; }
+
+.scanner-manual-form .btn-warning { border-radius: 0; }

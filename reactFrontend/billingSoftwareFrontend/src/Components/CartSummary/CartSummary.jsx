@@ -2,42 +2,35 @@ import { useContext, useState } from "react";
 import "./CartSummary.css";
 import { AppContext } from "../../Context/AppContext";
 import ReceiptPopup from "../ReceiptPopup/ReceiptPopup";
-import { createOrder } from "../../Service/OrderService";
-import { createRazorpayOrder } from "../../Service/PaymentService";
+import { createOrder, deleteOrder } from "../../Service/OrderService";
+import { createRazorpayOrder, verifyPayment } from "../../Service/PaymentService";
 import { AppConstants } from "../../Util/Constants";
+import toast from "react-hot-toast";
 
-const CartSummary = ({
-  customerName,
-  mobileNumber,
-  setMobileNumber,
-  setCustomerName,
-}) => {
+const CartSummary = ({ customerName, mobileNumber, setMobileNumber, setCustomerName }) => {
   const { cartItems, clearCart } = useContext(AppContext);
 
   const [orderDetails, setOrderDetails] = useState(null);
-
   const [isProcessing, setIsProcessing] = useState(false);
-
   const [showPopup, setShowPopup] = useState(false);
+  // NEW: discount state
+  const [discountPercent, setDiscountPercent] = useState(0);
 
-  const totalAmount = cartItems.reduce(
-    (total, item) => total + item.price * item.quantity,
-    0
+  const subtotal = cartItems.reduce(
+    (total, item) => total + item.price * item.quantity, 0
   );
 
-  const tax = totalAmount * 0.18;
-
-  const grandTotal = totalAmount + tax;
+  // NEW: discount calculation
+  const discountAmount = subtotal * (discountPercent / 100);
+  const discountedSubtotal = subtotal - discountAmount;
+  const tax = discountedSubtotal * 0.18;
+  const grandTotal = discountedSubtotal + tax;
 
   const clearAll = () => {
     setCustomerName("");
     setMobileNumber("");
+    setDiscountPercent(0);
     clearCart();
-  };
-
-  const placeOrder = () => {
-    setShowPopup(true);
-    clearAll();
   };
 
   const handlePrintReceipt = () => {
@@ -45,9 +38,9 @@ const CartSummary = ({
   };
 
   const loadRazorpayScript = () => {
-    return new Promise((resolve, reject) => {
+    return new Promise((resolve) => {
       const script = document.createElement("script");
-      script.src = "http://checkout.razorpay.com/v1/checkout.js";
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
       script.onload = () => resolve(true);
       script.onerror = () => resolve(false);
       document.body.appendChild(script);
@@ -64,23 +57,24 @@ const CartSummary = ({
   };
 
   const completePayment = async (paymentMode) => {
-    if (!customerName || !mobileNumber) {
-      toast.error("Please enter customer details");
+    if (cartItems.length === 0) {
+      toast.error("Cart is empty");
       return;
     }
 
-    if (cartItems.length === 0) {
-      toast.error("Your cart is empty");
-      return;
-    }
+    // CHANGED: customer details optional — fallback to defaults
+    const finalCustomerName = customerName.trim() || "Walk-in Customer";
+    const finalPhone = mobileNumber.trim() || "0000000000";
 
     const orderData = {
-      customerName,
-      phoneNumber: mobileNumber,
+      customerName: finalCustomerName,
+      phoneNumber: finalPhone,
       cartItems,
-      subtotal: totalAmount,
+      subtotal: discountedSubtotal,
       tax,
       grandTotal,
+      discount: discountAmount,
+      discountPercent,
       paymentMethod: paymentMode.toUpperCase(),
     };
 
@@ -90,15 +84,15 @@ const CartSummary = ({
       const savedData = response.data;
 
       if (response.status === 201 && paymentMode === "cash") {
-        toast.success("Cash recieved");
+        toast.success("Cash received ✓");
         setOrderDetails(savedData);
+        // CHANGED: auto-show receipt immediately, no separate "Place Order" button
+        setShowPopup(true);
       } else if (response.status === 201 && paymentMode === "upi") {
         const razorpayLoaded = await loadRazorpayScript();
-
         if (!razorpayLoaded) {
-          toast.error("Unable to load razorpay");
+          toast.error("Unable to load Razorpay");
           await deleteOrderOnFailure(savedData.orderId);
-
           return;
         }
 
@@ -106,6 +100,7 @@ const CartSummary = ({
           amount: grandTotal,
           currency: "INR",
         });
+
         const options = {
           key: AppConstants.RAZORPAY_KEY_ID,
           amount: razorpayResponse.data.amount,
@@ -116,13 +111,8 @@ const CartSummary = ({
           handler: async function (response) {
             await verifyPaymentHandler(response, savedData);
           },
-          prefill: {
-            name: customerName,
-            contact: mobileNumber,
-          },
-          theme: {
-            color: "#3399cc",
-          },
+          prefill: { name: finalCustomerName, contact: finalPhone },
+          theme: { color: "#3399cc" },
           modal: {
             ondismiss: async () => {
               await deleteOrderOnFailure(savedData.orderId);
@@ -132,13 +122,11 @@ const CartSummary = ({
         };
 
         const rzp = new window.Razorpay(options);
-
         rzp.on("payment.failed", async (response) => {
           await deleteOrderOnFailure(savedData.orderId);
           toast.error("Payment failed");
           console.error(response.error.description);
         });
-
         rzp.open();
       }
     } catch (error) {
@@ -158,18 +146,21 @@ const CartSummary = ({
     };
     try {
       const paymentResponse = await verifyPayment(paymentData);
-      if (paymentResponse.status == 200) {
-        toast.success("Payment successful");
-        setOrderDetails({
+      if (paymentResponse.status === 200) {
+        toast.success("Payment successful ✓");
+        const updatedOrder = {
           ...savedOrder,
           paymentDetails: {
             razorpayOrderId: response.razorpay_order_id,
             razorpayPaymentId: response.razorpay_payment_id,
             razorpaySignature: response.razorpay_signature,
           },
-        });
+        };
+        setOrderDetails(updatedOrder);
+        // CHANGED: auto-show receipt after UPI success too
+        setShowPopup(true);
       } else {
-        toast.error("Payment Processing failed");
+        toast.error("Payment verification failed");
       }
     } catch (error) {
       console.error(error);
@@ -178,60 +169,79 @@ const CartSummary = ({
   };
 
   return (
-    <div className="mt-2">
+    <div className="mt-2 px-2">
+      {/* NEW: Discount Field */}
+      <div className="d-flex align-items-center gap-2 mb-2">
+        <span className="text-light small col-5">Discount %</span>
+        <input
+          type="number"
+          className="form-control form-control-sm"
+          min="0"
+          max="100"
+          value={discountPercent}
+          onChange={(e) => {
+            const val = Math.min(100, Math.max(0, Number(e.target.value)));
+            setDiscountPercent(val);
+          }}
+          placeholder="0"
+        />
+        <span className="text-warning small">-₹{discountAmount.toFixed(2)}</span>
+      </div>
+
       <div className="cart-summary-details">
-        <div className="d-flex justify-content-between mb-2">
-          <span className="text-light">Item: </span>
-          <span className="text-light">₹{totalAmount.toFixed(2)}</span>
+        <div className="d-flex justify-content-between mb-1">
+          <span className="text-light small">Subtotal:</span>
+          <span className="text-light small">₹{subtotal.toFixed(2)}</span>
         </div>
-        <div className="d-flex justify-content-between mb-2">
-          <span className="text-light">Tax (18%): </span>
-          <span className="text-light">₹{tax.toFixed(2)}</span>
+        {discountPercent > 0 && (
+          <div className="d-flex justify-content-between mb-1">
+            <span className="text-success small">Discount ({discountPercent}%):</span>
+            <span className="text-success small">-₹{discountAmount.toFixed(2)}</span>
+          </div>
+        )}
+        <div className="d-flex justify-content-between mb-1">
+          <span className="text-light small">Tax (18% GST):</span>
+          <span className="text-light small">₹{tax.toFixed(2)}</span>
         </div>
-        <div className="d-flex justify-content-between mb-2">
-          <span className="text-light">Total: </span>
-          <span className="text-light">₹{grandTotal.toFixed(2)}</span>
+        <div className="d-flex justify-content-between mb-2 border-top pt-1">
+          <span className="text-light fw-bold">Total:</span>
+          <span className="text-warning fw-bold">₹{grandTotal.toFixed(2)}</span>
         </div>
       </div>
 
-      <div className="d-flex gap-3">
+      {/* CHANGED: No separate "Place Order" button — Cash/UPI directly show receipt */}
+      <div className="d-flex gap-2">
         <button
           className="btn btn-success flex-grow-1"
           onClick={() => completePayment("cash")}
-          disabled={isProcessing}
+          disabled={isProcessing || cartItems.length === 0}
         >
-          {isProcessing ? "Processing..." : "Cash"}
+          {isProcessing ? "Processing..." : "💵 Cash"}
         </button>
         <button
           className="btn btn-primary flex-grow-1"
           onClick={() => completePayment("upi")}
-          disabled={isProcessing}
+          disabled={isProcessing || cartItems.length === 0}
         >
-          {isProcessing ? "Processing..." : "Upi"}
+          {isProcessing ? "Processing..." : "📱 UPI"}
         </button>
       </div>
-      {/* <ReceiptPopup /> */}
-      <div className="d-flex gap-3 mt-3">
-        <button
-          className="btn btn-warning flex-grow-1"
-          onClick={placeOrder}
-          disabled={isProcessing || !orderDetails}
-        >
-          Place order
-        </button>
-      </div>
-      {showPopup && (
+
+      {showPopup && orderDetails && (
         <ReceiptPopup
           orderDetails={{
             ...orderDetails,
+            discountAmount,
+            discountPercent,
             razorpayOrderId: orderDetails.paymentDetails?.razorpayOrderId,
             razorpayPaymentId: orderDetails.paymentDetails?.razorpayPaymentId,
           }}
-          onClose={() => setShowPopup(false)}
+          onClose={() => { setShowPopup(false); clearAll(); }}
           onPrint={handlePrintReceipt}
         />
       )}
     </div>
   );
 };
+
 export default CartSummary;

@@ -30,10 +30,13 @@ public class OrderEntity {
     private Double subtotal;
     private Double tax;
     private Double grandTotal;
+    // NEW: discount columns
+    private Double discount;
+    private Double discountPercent;
     private LocalDateTime createdAt;
 
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    @JoinColumn(name = "order_id")
+    @JoinColumn(name = "tbl_order_id")
     private List<OrderItemEntity> items = new ArrayList<>();
 
     @Embedded
@@ -43,8 +46,8 @@ public class OrderEntity {
     private PaymentMethod paymentMethod;
 
     @PrePersist
-    protected void onCreate(){
-        this.orderId = "ORD"+ System.currentTimeMillis();
+    protected void onCreate() {
+        this.orderId = "ORD" + System.currentTimeMillis();
         this.createdAt = LocalDateTime.now();
     }
 }

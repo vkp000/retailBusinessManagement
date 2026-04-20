@@ -4,6 +4,17 @@ target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
+# ===========================
+# Sensitive files — NEVER commit
+# ===========================
+application.properties
+application-local.properties
+application-prod.properties
+application-dev.properties
+.env
+.env.*
+!.env.example
+
 ### STS ###
 .apt_generated
 .classpath

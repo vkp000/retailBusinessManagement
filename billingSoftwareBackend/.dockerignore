@@ -1,0 +1,23 @@
+# Secrets — never go into Docker image
+application.properties
+application-local.properties
+application-prod.properties
+src/main/resources/application.properties
+
+# Git history
+.git/
+.gitignore
+.gitattributes
+
+# Build cache (will be rebuilt inside container)
+target/
+
+# IDE
+.idea/
+*.iml
+.vscode/
+
+# Docs
+README.md
+HELP.md
+*.md

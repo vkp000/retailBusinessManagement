@@ -1,13 +1,10 @@
-# ===========================
-# ver1.0 backup folder
-# ===========================
+# ===== ver1.0 backup folder =====
 ver1.0/
 *.zip
 
-# ===========================
-# Sensitive / Secret files
-# ===========================
-**/application.properties
+# ===== SENSITIVE — NEVER COMMIT =====
+# application.properties ab safe hai (env vars use karta hai)
+# Sirf local override files ignore karo
 **/application-local.properties
 **/application-prod.properties
 **/application-dev.properties
@@ -15,33 +12,23 @@ ver1.0/
 **/.env.*
 !**/.env.example
 
-# ===========================
-# Java / Maven build output
-# ===========================
+# ===== Java/Spring build =====
 **/target/
 !**/src/main/**/target/
 !**/src/test/**/target/
 
-# ===========================
-# Frontend dependencies & build
-# ===========================
+# ===== Frontend =====
 **/node_modules/
 **/dist/
 **/dist-ssr/
-**/.next/
-**/build/
-!**/src/main/**/build/
-!**/src/test/**/build/
+*.local
 
-# ===========================
-# IDE files
-# ===========================
+# ===== IDE =====
 .idea/
-*.iws
 *.iml
+*.iws
 *.ipr
 .vscode/
-!.vscode/extensions.json
 .apt_generated
 .classpath
 .factorypath
@@ -53,17 +40,16 @@ ver1.0/
 /nbbuild/
 /nbdist/
 /.nb-gradle/
+build/
+!**/src/main/**/build/
+!**/src/test/**/build/
 
-# ===========================
-# OS files
-# ===========================
+# ===== OS =====
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# ===========================
-# Logs
-# ===========================
+# ===== Logs =====
 *.log
 logs/
 npm-debug.log*
@@ -71,13 +57,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 
-# ===========================
-# Misc
-# ===========================
-*.local
-*.suo
-*.ntvs*
-*.njsproj
-*.sln
-*.sw?
+# ===== Misc =====
 HELP.md
+.mvn/wrapper/maven-wrapper.jar

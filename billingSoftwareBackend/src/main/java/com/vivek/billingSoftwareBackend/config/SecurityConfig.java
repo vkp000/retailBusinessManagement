@@ -41,7 +41,10 @@ public class SecurityConfig {
             .authorizeHttpRequests(auth -> auth
                 // Allow all OPTIONS preflight requests — must be first
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
-                // Public endpoints
+                // NOTE: These paths are relative to the servlet context path.
+                // Since application.properties sets server.servlet.context-path=/api/v1.0,
+                // Spring Security evaluates paths AFTER stripping that prefix.
+                // So "/login" here matches the full URL "/api/v1.0/login" — no change needed.
                 .requestMatchers("/login", "/encode").permitAll()
                 // Authenticated user endpoints (USER or ADMIN)
                 .requestMatchers(

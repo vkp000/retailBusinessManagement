@@ -3,6 +3,8 @@ package com.vivek.billingSoftwareBackend.config;
 import com.vivek.billingSoftwareBackend.filters.JwtRequestFilter;
 import com.vivek.billingSoftwareBackend.service.impl.AppUserDetailsService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
@@ -31,14 +33,22 @@ public class SecurityConfig {
     private final AppUserDetailsService appUserDetailsService;
     private final JwtRequestFilter jwtRequestFilter;
 
+    // Read allowed origins from environment variable
+    // On Render, set: ALLOWED_ORIGINS=https://retailbusinessmanagement.netlify.app
+    // For local dev it falls back to localhost
+    @Value("${allowed.origins:http://localhost:5173}")
+    private String allowedOrigins;
+
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http.cors(Customizer.withDefaults())
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
+                        // Allow CORS preflight requests through without auth
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        // Public endpoints
                         .requestMatchers("/login", "/encode").permitAll()
-                        // FIX: Both exact path and /** added for each resource
-                        // e.g. /payments matches PaymentController root, /payments/** matches sub-paths
+                        // Authenticated user endpoints
                         .requestMatchers(
                                 "/categories", "/categories/**",
                                 "/items", "/items/**",
@@ -46,6 +56,7 @@ public class SecurityConfig {
                                 "/payments", "/payments/**",
                                 "/dashboard", "/dashboard/**"
                         ).hasAnyRole("USER", "ADMIN")
+                        // Admin-only endpoints
                         .requestMatchers("/admin/**").hasRole("ADMIN")
                         .anyRequest().authenticated())
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
@@ -65,8 +76,9 @@ public class SecurityConfig {
 
     private UrlBasedCorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("http://localhost:5173", "https://retailbusinessmanagement.netlify.app"));
-//        config.setAllowedOrigins(List.of("*"));
+
+        // Only your frontend domains are allowed — no wildcards
+        config.setAllowedOrigins(List.of(allowedOrigins.split(",")));
 
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));

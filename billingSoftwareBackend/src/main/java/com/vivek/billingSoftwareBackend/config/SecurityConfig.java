@@ -15,11 +15,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.web.filter.CorsFilter;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import java.util.List;
@@ -35,20 +35,22 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
+            // Spring Security will auto-discover the corsConfigurationSource() bean below
             .cors(Customizer.withDefaults())
             .csrf(AbstractHttpConfigurer::disable)
             .authorizeHttpRequests(auth -> auth
-                // CRITICAL: Allow all OPTIONS preflight requests — must be first
+                // Allow all OPTIONS preflight requests — must be first
                 .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
                 // Public endpoints
                 .requestMatchers("/login", "/encode").permitAll()
-                // Authenticated user endpoints
+                // Authenticated user endpoints (USER or ADMIN)
                 .requestMatchers(
                     "/categories", "/categories/**",
                     "/items", "/items/**",
                     "/orders", "/orders/**",
                     "/payments", "/payments/**",
-                    "/dashboard", "/dashboard/**"
+                    "/dashboard", "/dashboard/**",
+                    "/barcodes", "/barcodes/**"
                 ).hasAnyRole("USER", "ADMIN")
                 // Admin-only endpoints
                 .requestMatchers("/admin/**").hasRole("ADMIN")
@@ -67,15 +69,16 @@ public class SecurityConfig {
         return new BCryptPasswordEncoder();
     }
 
+    /**
+     * Spring Security's http.cors(Customizer.withDefaults()) automatically picks up
+     * a bean named "corsConfigurationSource". Do NOT also register a CorsFilter bean —
+     * doing so causes a double-filter conflict that results in 403 on all requests
+     * including public endpoints like /login and /encode.
+     */
     @Bean
-    public CorsFilter corsFilter() {
-        return new CorsFilter(corsConfigurationSource());
-    }
-
-    private UrlBasedCorsConfigurationSource corsConfigurationSource() {
+    public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration config = new CorsConfiguration();
 
-        // Only your Netlify frontend is allowed — no wildcards
         config.setAllowedOrigins(List.of(
             "https://retailbusinessmanagement.netlify.app",
             "http://localhost:5173"
@@ -84,7 +87,7 @@ public class SecurityConfig {
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
         config.setAllowCredentials(true);
-        config.setMaxAge(3600L); // cache preflight for 1 hour
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
         source.registerCorsConfiguration("/**", config);

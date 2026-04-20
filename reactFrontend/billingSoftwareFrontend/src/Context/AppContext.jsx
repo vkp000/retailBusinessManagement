@@ -6,12 +6,11 @@ export const AppContext = createContext(null);
 
 export const AppContextProvider = (props) => {
 
-    const [itemsData, setItemsData] = useState([]); 
+    const [itemsData, setItemsData] = useState([]);
     const [categories, setCategories] = useState([]);
     const [auth, setAuth] = useState({token: null, role: null});
     const [cartItems, setCartItems] = useState([]);
 
-    // FIX: Match by itemId (unique) not name — same-name items won't collide
     const addToCart = (item) => {
         const existingItem = cartItems.find(cartItem => cartItem.itemId === item.itemId);
         if (existingItem) {
@@ -35,22 +34,6 @@ export const AppContextProvider = (props) => {
         ));
     }
 
-    useEffect(() => {
-        async function loadData() {
-            if (localStorage.getItem("token") && localStorage.getItem("role")) {
-                setAuthData(
-                    localStorage.getItem("token"),
-                    localStorage.getItem("role")
-                );
-            }
-            const response = await fetchCategories();
-            const itemResponse = await fetchItems();
-            setCategories(response.data);
-            setItemsData(itemResponse.data);
-        }
-        loadData();
-    }, [])
-
     const setAuthData = (token, role) => {
         setAuth({token, role});
     }
@@ -58,6 +41,36 @@ export const AppContextProvider = (props) => {
     const clearCart = () => {
         setCartItems([]);
     }
+
+    // Restore auth from localStorage on app start
+    useEffect(() => {
+        const token = localStorage.getItem("token");
+        const role = localStorage.getItem("role");
+        if (token && role) {
+            setAuth({ token, role });
+        }
+    }, []);
+
+    // Only fetch categories and items AFTER we have a valid token
+    // This prevents unauthenticated requests on page load / login page
+    useEffect(() => {
+        if (!auth.token) return;
+
+        async function loadData() {
+            try {
+                const [categoryResponse, itemResponse] = await Promise.all([
+                    fetchCategories(),
+                    fetchItems()
+                ]);
+                setCategories(categoryResponse.data);
+                setItemsData(itemResponse.data);
+            } catch (err) {
+                console.error("Failed to load app data", err);
+            }
+        }
+
+        loadData();
+    }, [auth.token]); // re-runs whenever token changes (login/logout)
 
     const contextValue = {
         categories,
